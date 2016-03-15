@@ -88,6 +88,7 @@ if [[ $(find "$PLUGIN_PATH"/enabled/*/receive-branch 2>/dev/null | wc -l) != 0 ]
 ### Install dokku plugin which allows you to deploy non master brunches
 
 To support multiple brunches in dokku,
+
 I wrote a simple dokku plugin [dokku-receive-branch](https://github.com/cinarra/dokku-receive-branch.git) (don't forget to star it ;-))
 
 To install plugin run
@@ -96,7 +97,7 @@ To install plugin run
 sudo dokku plugin:install https://github.com/cinarra/dokku-receive-branch.git
 ```
 
-And as plugin in alpha quality stage, don't forget to update it periodically.
+And as plugin is in alpha quality stage, don't forget to update it periodically.
 
 ```bash
 sudo dokku plugin:update receive-branch
