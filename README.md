@@ -48,9 +48,14 @@ to check it, you need to look into `/home/dokku/.ssh/authorized_keys` file.
 
 Just run `cat /home/dokku/.ssh/authorized_keys` and if you will see there
 garbage like this
-`command="echo 'Please login as the user \"ubuntu\" rather than the user \"root\".';echo;sleep 10"` in `/home/dokku/.ssh/authorized_keys`
 
-just remove that garbage, result `authorized_keys` must be looking like this
+```
+command="echo 'Please login as the user \"ubuntu\" rather than the user \"root\".';echo;sleep 10"
+``` 
+
+in `/home/dokku/.ssh/authorized_keys` just remove that garbage. 
+
+Resulted `authorized_keys` must be looking like this
 
 ```bash
 command="FINGERPRINT=42:ed:bd:8a:1e:aa:60:4f:8b:62:a1:5e:da:b6:53:b0 NAME=admin `cat /home/dokku/.sshcommand` $SSH_ORIGINAL_COMMAND",no-agent-forwarding,no-user-rc,no-X11-forwarding,no-port-forwarding YOUR_KEY
