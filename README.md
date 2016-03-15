@@ -5,7 +5,7 @@
 In short, you can deploy your git brunches as standalone apps with unique urls.
 This is very useful feature.
 
-And as I doesn't use Heroku, here I'll show you
+And as I don't use Heroku, I'll show you
 how to create your own Heroku review apps on [dokku](https://github.com/dokku/dokku).
 
 # Preinstall steps
@@ -136,7 +136,7 @@ Project install and run file `run.sh`,
 [run.sh](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/run.sh)
 
 *As pnpm sometimes crashes on install, I use a simple
-[pnpm retry hack]https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/run.sh*
+[pnpm retry hack](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/run.sh#L14-L24)*
 
 *pnpm is 20x faster than npm install so I recommend it to you*
 
@@ -154,13 +154,13 @@ In current project I just check that runned container will respond with some htm
 
 Also add following two scripts in package json section, or create a bash aliases.
 
-[deploy](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/package.json)
+[deploy](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/package.json#L9)
 
 ```bash
 "deploy": "git push dokku $(git rev-parse --abbrev-ref HEAD)"
 ```
 
-[destroy](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/package.json)
+[destroy](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/package.json#L10)
 
 ```bash
 "destroy": "git push dokku $(git rev-parse --abbrev-ref HEAD)"
