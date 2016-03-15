@@ -1,0 +1,15 @@
+{
+  "presets": ["es2015", "react", "stage-0"],
+  "env": {
+    "LIB": {
+      "plugins": [
+        ["webpack-loaders", {"config": "./config/lib.webpack.config.js"}]
+      ]
+    },
+    "TESTS": {
+      "plugins": [
+        ["webpack-loaders", {"config": "./config/tests.webpack.config.babel.js", "verbose": false}]
+      ]
+    }
+  }
+}
