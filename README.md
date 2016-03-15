@@ -1,69 +1,184 @@
-# User install
+# Create your own heroku review apps with dokku
 
-Read [DEPLOY.md](DEPLOY.md)
+[Heroku](https://www.heroku.com/) has amazing feature [Review Apps](https://devcenter.heroku.com/articles/github-integration-review-apps)
 
-# Install dokku (for system administrators)
+In short, you can deploy your git brunches as standalone apps with unique urls.
+This is very useful feature.
 
-## On the server
+And as I doesn't use Heroku, here I'll show you
+how to create your own Heroku review apps on [dokku](https://github.com/dokku/dokku).
 
-Ubuntu 14.04!!!
+# Preinstall steps
 
-After [this dokku install](http://dokku.viewdocs.io/dokku/installation/) instructions
+You need to create public - `id_dokku_rsa.pub` and private - `id_dokku_rsa` keys for deployment,
+generate them with `ssh-keygen -t rsa` command.
+
+You need to have some domain i.e. `mysite.com` and access to `dns` `CNAME-records`.
+
+Add two records
+
+```bash
+dokku.mysite.com     300     IN      CNAME   YOUR_UBUNTU_SERVER_IP
+*.dokku.mysite.com    300     IN      CNAME   YOUR_UBUNTU_SERVER_IP
+```
+
+(_you always can use your `/etc/hosts` file if you have no access to cname-records_)
+
+And you need a clean ubuntu 14.04 server.
+
+# Install steps
+
+### Install dokku
+
+ssh into your ubuntu server and run there
 
 ```bash
 wget https://raw.githubusercontent.com/dokku/dokku/v0.4.14/bootstrap.sh
 sudo DOKKU_TAG=v0.4.14 bash bootstrap.sh
-# goto hostanme, enter VHOST and ssh-key
 ```
-I got following problem:
 
-garbage like this `command="echo 'Please login as the user \"ubuntu\" rather than the user \"root\".';echo;sleep 10"` in `/home/dokku/.ssh/authorized_keys`
+then goto in browser to `YOUR_UBUNTU_SERVER_IP` and
+enter in the web interface VHOST=mysite.com and public `id_dokku_rsa.pub` key
+generated at `Preinstall steps`.
 
-So manually I removed it and file must be looking like this:
+### Fix installation errors
+
+With some probability you can get one dokku installation problem,
+to check it, you need to look into `/home/dokku/.ssh/authorized_keys` file.
+
+Just run `cat /home/dokku/.ssh/authorized_keys` and if you will see there
+garbage like this
+`command="echo 'Please login as the user \"ubuntu\" rather than the user \"root\".';echo;sleep 10"` in `/home/dokku/.ssh/authorized_keys`
+
+just remove that garbage, result `authorized_keys` must be looking like this
 
 ```bash
 command="FINGERPRINT=42:ed:bd:8a:1e:aa:60:4f:8b:62:a1:5e:da:b6:53:b0 NAME=admin `cat /home/dokku/.sshcommand` $SSH_ORIGINAL_COMMAND",no-agent-forwarding,no-user-rc,no-X11-forwarding,no-port-forwarding YOUR_KEY
 ```
 
-Then, you need to find in `/var/lib/dokku/plugins/enabled/git/commands`
-next line
+where YOUR_KEY is your `id_dokku_rsa.pub` key content.
+
+### Hack dokku
+
+Then you need to hack `dokku` a little.
+
+The problem is that `stable dokku` version contains one error,
+which prevents you to deploy any other branches than master.
+
+I fixed this error in this [PR](https://github.com/dokku/dokku/pull/1993)
+but it is not in stable dokku version.
+
+You need to find in `/var/lib/dokku/plugins/enabled/git/commands` file following line
 
 ```
 if test -f "$PLUGIN_PATH"/enabled/*/receive-branch; then
 ```
 
-and replace with
+and replace this line with
 
 ```
 if [[ $(find "$PLUGIN_PATH"/enabled/*/receive-branch 2>/dev/null | wc -l) != 0 ]]; then
 ```
 
-(*this my PR https://github.com/dokku/dokku/pull/1993*)
+### Install dokku plugin which allows you to deploy non master brunches
 
-Generated rsa key for dokku - `id_dokku_rsa`, and replace `YOUR_KEY` in `/home/dokku/.ssh/authorized_keys` with public key part
+To support multiple brunches in dokku,
+I wrote a simple dokku plugin [dokku-receive-branch](https://github.com/cinarra/dokku-receive-branch.git) (don't forget to star it ;-))
 
-Install plugin to allow deploy multiple branches on dokku
+To install plugin run
 
 ```bash
 sudo dokku plugin:install https://github.com/cinarra/dokku-receive-branch.git
 ```
 
-Update plugin
+And as plugin in alpha quality stage, don't forget to update it periodically.
 
 ```bash
 sudo dokku plugin:update receive-branch
 ```
 
-Prevent nginx to respond on unkown hosts
+### Setup nginx
+
+To prevent nginx respond on unkown hosts run command below
 
 ```bash
 printf "server {\n  return 404;\n}\n" | sudo tee __default__.conf > /dev/null
 sudo service nginx reload
 ```
 
-## Locally
+This command adds
 
-Added to `~/.ssh/config` (if not exists create it)
+```bash
+server {
+  return 404;
+}
+```
+
+to nginx config, so any requests to unknow hosts or via IP will be rejected with 404 error.
+
+
+### Create dokku app
+
+```bash
+dokku apps:create dokku
+```
+
+
+# Prepare your project for deployment
+
+You need to create `Dockerfile` file in the root of your project,
+for node apps it's content is
+
+[Dockerfile](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/Dockerfile)
+
+Project install and run file `run.sh`,
+
+[run.sh](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/run.sh)
+
+*As pnpm sometimes crashes on install, I use a simple
+[pnpm retry hack]https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/run.sh*
+
+*pnpm is 20x faster than npm install so I recommend it to you*
+
+And you need to add a `CHECKS` file,
+
+[CHECKS](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/CHECKS)
+
+More information about `CHECKS` file you can read in [dokku documentation](http://dokku.viewdocs.io/dokku/checks-examples/)
+
+In current project I just check that runned container will respond with some html which contains `kotatsu` string.
+
+```bash
+/  kotatsu
+```
+
+Also add following two scripts in package json section, or create a bash aliases.
+
+[deploy](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/package.json)
+
+```bash
+"deploy": "git push dokku $(git rev-parse --abbrev-ref HEAD)"
+```
+
+[destroy](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/package.json)
+
+```bash
+"destroy": "git push dokku $(git rev-parse --abbrev-ref HEAD)"
+```
+
+Installation complete.
+
+---
+
+# User install
+
+### ssh setup
+
+Now all your team members should add private `id_dokku_rsa` key to their computers.
+
+Get `id_dokku_rsa` key generated at `Preinstall steps` and place it inside your `~/.ssh` folder.
+
+Add to `~/.ssh/config` (if not exists create it) next lines
 
 ```bash
 Host dokku.mysite.com
@@ -71,26 +186,19 @@ Host dokku.mysite.com
   IdentityFile ~/.ssh/id_dokku_rsa
 ```
 
-# Prepare project for deployment
+### git setup
 
-[Dockerfile](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/Dockerfile)
-
-Container will not be deployed until this checks done
-
-[CHECKS](https://github.com/istarkov/create-your-own-heroku-review-apps-with-dokku/blob/master/CHECKS)
-
-
-# Create app on server
-
-```bash
-dokku apps:create dokku
-```
-
-# Git setup
+Add additional remote endpoint to git
 
 ```bash
 git remote add dokku dokku@dokku.mysite.com:dokku
 ```
+
+User install complete
+
+---
+
+Now you can easily deploy any branch of you project on the server
 
 # Deploy
 
@@ -100,7 +208,7 @@ You can deploy any branch you want, just run
 
 ```bash
 npm run deploy
-# this is a shortcut to command
+# this is a shortcut to
 # git push dokku ${CURRENT_GIT_BRANCH_NAME}
 # where CURRENT_GIT_BRANCH_NAME=`git rev-parse --abbrev-ref HEAD`
 ```
@@ -111,14 +219,16 @@ To deploy squashed commits run
 npm run deploy -- --force
 ```
 
-Master brunch will be available at `http://dokku.mysite.com` and all other brunches will be available
-at `${brunch_name}.dokku.mysite.com`
+Master brunch will be available at `http://dokku.mysite.com`
+and all other brunches will be available
+at `${CURRENT_GIT_BRANCH_NAME}.dokku.mysite.com`
 
-After you merged your branch, branch app is not needed, so inside your brunch run to free system resources
+After you have merged your branch, branch app is not needed,
+so inside your brunch run to free system resources.
 
 ```bash
 npm run destroy
-# this is a shortcut to command
+# this is a shortcut to
 # git push dokku --delete ${CURRENT_GIT_BRANCH_NAME}
 # where CURRENT_GIT_BRANCH_NAME=`git rev-parse --abbrev-ref HEAD`
 ```
@@ -130,15 +240,4 @@ do this manually at server*
 dokku apps:destroy dokku force
 ```
 
-
-
-# Miscellaneous
-
-How to install mosh and tmux
-
-```
-sudo add-apt-repository ppa:keithw/mosh
-sudo apt-get update
-sudo apt-get install mosh
-sudo apt-get install tmux
-```
+# The end
