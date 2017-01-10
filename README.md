@@ -33,7 +33,7 @@ And you need a clean ubuntu 14.04 server.
 ssh into your ubuntu server and run there
 
 ```bash
-wget https://raw.githubusercontent.com/dokku/dokku/v0.4.14/bootstrap.sh
+wget https://raw.githubusercontent.com/dokku/dokku/v0.8.0/bootstrap.sh
 sudo DOKKU_TAG=v0.4.14 bash bootstrap.sh
 ```
 
@@ -62,28 +62,6 @@ command="FINGERPRINT=42:ed:bd:8a:1e:aa:60:4f:8b:62:a1:5e:da:b6:53:b0 NAME=admin 
 ```
 
 where YOUR_KEY is your `id_dokku_rsa.pub` key content.
-
-### Hack dokku
-
-Then you need to hack `dokku` a little.
-
-The problem is that `stable dokku` version contains one error,
-which prevents you to deploy any other branches than master.
-
-I fixed this error in this [PR](https://github.com/dokku/dokku/pull/1993)
-but it is not in stable dokku version.
-
-You need to find in `/var/lib/dokku/plugins/enabled/git/commands` file following line
-
-```
-if test -f "$PLUGIN_PATH"/enabled/*/receive-branch; then
-```
-
-and replace this line with
-
-```
-if [[ $(find "$PLUGIN_PATH"/enabled/*/receive-branch 2>/dev/null | wc -l) != 0 ]]; then
-```
 
 ### Install dokku plugin which allows you to deploy non master brunches
 
